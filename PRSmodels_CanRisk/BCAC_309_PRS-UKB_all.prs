@@ -2,7 +2,7 @@
 #reference: <in preparation>
 #extra: NONE
 #Pop,Eur,Afr,EAs,SAs             #ethnicities
-1.0,0.9,0.9,0.9,0.8              #threshold
+1.0,0.8,0.8,0.8,0.7              #threshold
 -0.339,-0.335,0.292,0.268,-0.160 #mean
 0.615,0.615,0.547,0.555,0.602    #sd
 0.499,0.499,0.196,0.326,0.331    #alpha
