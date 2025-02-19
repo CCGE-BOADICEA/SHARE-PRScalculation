@@ -17,6 +17,11 @@ A z-score is a standard normal PRS.
 It can also work on mixed-ancestry individuals, if ancestry proportions are provided.
 
 
+If you are only interested in calculating PRS for individuals of mixed-ancestry and you already have the raw PRS 
+(and the ancestry proportions), then you can also use the R or python scripts in the standaloneScripts folder.
+[Ficorella L, Yang X, Mavaddat N, Carver T, Hassan H, Dennis J, et al. Adapting the BOADICEA breast and ovarian cancer risk models for the ethnically diverse UK population. medRxiv. 2025:2025.02.14.25322307.]
+
+
 Inputs
 ------
 
