@@ -16,7 +16,6 @@ different calculations depending on the options supplied:
 A z-score is a standard normal PRS.
 It can also work on mixed-ancestry individuals, if ancestry proportions are provided.
 
-
 If you are only interested in calculating PRS for individuals of mixed-ancestry and you already have the raw PRS 
 (and the ancestry proportions), then you can also use the R or python scripts in the standaloneScripts folder.
 [Ficorella L, Yang X, Mavaddat N, Carver T, Hassan H, Dennis J, et al. Adapting the BOADICEA breast and ovarian cancer risk models for the ethnically diverse UK population. medRxiv. 2025:2025.02.14.25322307.]
@@ -134,7 +133,7 @@ chromosome and position, so build should be consistent between the two
 files.
 
 An example of a VCF file that uses genotyping is given in
-``sample_VCF_files/sample_BCAC_313_genotypes.vcf``, where the corresponding
+``Examples/VCFfiles/sample_BCAC_313_genotypes.vcf``, where the corresponding
 PRS file is ``PRS_files/BCAC_313_PRS.prs``.
 
 Dosages
@@ -168,13 +167,13 @@ record, and it must be the same as the effect allele specified in the
 PRS file.
 
 An example of a VCF file that uses dosages is given in
-``sample_VCF_files/sample_BCAC_313_dosages.vcf``, where the corresponding
+``Examples/VCFfiles/sample_BCAC_313_dosages.vcf``, where the corresponding
 PRS file is ``PRS_files/BCAC_313_PRS.prs``.
 
 Examples
 ^^^^^^^^
 
-Examples VCF files are given in the direstory: ``sample_VCF_files``
+Examples VCF files are given in the directory: ``Examples/VCFfiles``
 
 -  'sample\_BCAC\_313\_genotypes.vcf' - A sample file for the BCAC 313
    variant PRS using genotypes only, with samples 'Low', 'Med', 'Mod'
@@ -249,19 +248,19 @@ First download the repository from GitHub, either via SSH
 
 .. code:: console
 
-   $ git clone git@github.com:CCGE-BOADICEA/PRS_from_VCF_file.git
+   $ git clone git@github.com:CCGE-BOADICEA/SHARE-PRScalculation.git
 
 or via HTTPS
 
 .. code:: console
 
-   $ git clone https://github.com/CCGE-BOADICEA/PRS_from_VCF_file.git
+   $ git clone https://github.com/CCGE-BOADICEA/SHARE-PRScalculation.git
 
 Then install the package via
 
 .. code:: console
 
-   $ cd PRS_from_VCF_file
+   $ cd SHARE-PRScalculation
    $ pip install .
 
 This will make the command available system-wide.
