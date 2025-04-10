@@ -70,10 +70,9 @@ class PrsInfo(object):
                   'eff': 'Effect_Allele',
                   'lor': 'Log_Odds_Ratio',
                   'eaf': 'Effect_Allele_Frequency'}
-        if   (ancestry==1) : titles['eaf'] = 'eaf_eur'
-        elif (ancestry==2) : titles['eaf'] = 'eaf_afr'
-        elif (ancestry==3) : titles['eaf'] = 'eaf_eas'
-        elif (ancestry==4) : titles['eaf'] = 'eaf_sas'
+        eafAncestry = ['unknown','eaf_eur', 'eaf_afr','eaf_eas','eaf_sas']
+        if (ancestry>0):
+            titles['eaf'] = eafAncestry[ancestry]
 
         titleKeys = list(titles.keys())
         if not isinstance(columns, dict):
@@ -154,81 +153,100 @@ class PrsInfo(object):
 
 
     @staticmethod
-    def extract_coeffList(line, chCoeff):
+    def extract_coeffList(line, chCoeff, essFlag=0, lowLim=None, uppLim=None):
         """
         Method to extract the values of coefficients from the first lines of the file.
 
         Args:
             line (str): One of the uncommented line of the PRS file. E.g, line should be of one of the forms:
-                1) 0.45
+                1) 0.45 #alpha/mean/sd/threshold
                 2) alpha/mean/sd/threshold = 0.45
-            Blank spaces are ignored.
+                Blank spaces are ignored.
+            chCoeff: name of the coefficient to be extracted
+            essFlag (-1,0,1): are those coefficients essential or can be recalculated?
+            lowLim, uppLim (float): lower and upper limits
 
         Returns:
-            list: the value(s) in that line.
+            resList (list of floats): the value(s) in the coefficient list.
+            XOR [888.888] for signalling that chCoeff wasn't found
+            XOR [999.999] for signalling that it was found but something went wrong
 
         Raises:
-            Vcf2PrsError: If values can not be extracted.
-
+            Vcf2PrsError: If values can not be extracted or are invalid.
         """
+
         if not isinstance(line, str):
-            raise Vcf2PrsError('extract_coeffList passed an invalid type: '
+            raise Vcf2PrsError('extract_coeffList was passed an invalid type: '
                                f'"{line}" of type {type(line)}.')
+        if chCoeff not in line.lower():
+            if (essFlag==1):
+                raise Vcf2PrsError(f'extract_coeffList was unable to find "{chCoeff}".')
+            elif (essFlag==0):
+                print(f'extract_coeffList was unable to find "{chCoeff}". They will be recalculated')
+            return [888.888]
+        
+        stripped = line
+        if '=' in stripped:
+            stripped = stripped.split('=', 1)[1]
+        if '#' in stripped:
+            stripped = stripped.split('#', 1)[0]
+        stripped = stripped.split(',')
 
-        if chCoeff not in line:
-            print(f'Unable to extract values for "{chCoeff}"; '
-                   'if possible, they will be recalculated')
-            coeffList = [999.999]
-
-        else:
-            stripped = line
+        coeffN = len(stripped)
+        resList = [999.999] * coeffN
+        for i in range(coeffN):
             try:
-                if '=' in stripped:
-                    stripped = stripped.split('=', 1)[1]
-                if '#' in stripped:
-                    stripped = stripped.split('#', 1)[0]
-                stripped = stripped.split(',')
-                coeffList = [float(i) for i in stripped]
-            except (TypeError, ValueError):
-                print(f'Unable to extract values for "{chCoeff}"; '
-                    'they will be recalculated')
-                coeffList = [999.999]
+                coeff = float(stripped[i])
+            except:
+                if (essFlag==1):
+                    raise Vcf2PrsError(f'the {i+1}th coefficient was not a float.')
+                elif (essFlag==0):
+                    print(f'the {i+1}th coefficient was not a float. It will be recalculated')
+                continue
+            if (lowLim is not None) and (coeff < lowLim):
+                if (essFlag==1):
+                    raise Vcf2PrsError(f'value "{coeff}" should be >= "{lowLim}".')
+                elif (essFlag==0):
+                    print(f'value "{coeff}" should be >= "{lowLim}". It will be recalculated')
+                continue
+            if (uppLim is not None) and (coeff > uppLim):
+                if (essFlag==1):
+                    raise Vcf2PrsError(f'value "{coeff}" should be <= "{uppLim}".')
+                elif (essFlag==0):
+                    print(f'value "{coeff}" should be <= "{uppLim}". It will be recalculated')
+                continue
+            resList[i] = coeff
 
-        return coeffList
+        return resList
 
-    def extract_coeff(coeffList,ancestry, lowLim=None, uppLim=None):
+    def extract_coeff(coeffList, ancestry, essFlag=False):
         """
         Method to extract the value of the coefficient from its list.
 
         Args:
             coeffList (list): the list of possible values
+            ancestry (integer): the specific ancestry chosen
+            essFlag (-1,0,1): is this coefficient essential or can be recalculated?
 
         Returns:
             float: the value of the coefficient.
 
         Raises:
             Vcf2PrsError: If value can not be extracted or is invalid.
-
         """
+
         try:
             coeff = coeffList[ancestry]
-        except (TypeError, ValueError):
-            print('Unable to extract value; if possible, it will be recalculated')
-            coeff = 999.999
         except (IndexError):
             raise Vcf2PrsError('Selected ancestry not available for this set')
-
-        # Check that the value is within limits lowLim < coeff < uppLim
-        if lowLim is not None:
-            if not (lowLim <= coeff):
-                raise Vcf2PrsError(f'value should be greater than {lowLim}. The value, '
-                                    f'{coeff}, is out of bounds.')
-        if uppLim is not None:
-            if not (uppLim >= coeff):
-                raise Vcf2PrsError(f'value should be smaller than {uppLim}. The value, '
-                                    f'{coeff}, is out of bounds.')
-
+        if not isinstance(coeff, float):
+            if essFlag:
+                raise Vcf2PrsError('extract_coeff was unable to extract value.')
+            else:
+                print('extract_coeff was unable to extract value. It will be recalculated')
+                coeff = 999.999
         return coeff
+
 
     def reset_found(self):
         for snp in self.snps.values():
@@ -283,36 +301,25 @@ class PrsInfo(object):
         # The first lines contains the coefficients for the PRS model in the file.
         # Open the rest of the file as a csv reader, and determine the
         # relevant columns from the headers.
-        print(ancestry)
-        tmpAnc = max(0, ancestry)
         try:
             tmp = prs_data.__next__(); 
             while tmp[0] == "#": tmp = prs_data.__next__()
-            self.threshList = PrsInfo.extract_coeffList(tmp, 'threshold')
-            if (self.threshList[0] != 999.999):
+            essFlag = 1 if (ancestry==-1) else -1   #threshold is only relevant for mixed ancestry calculations
+            self.threshList = PrsInfo.extract_coeffList(tmp, 'threshold', essFlag, 0, 1)
+            if (self.threshList[0] != 888.888):
                 tmp = prs_data.__next__()
                 while tmp[0] == "#": tmp = prs_data.__next__()
-            elif (ancestry==-1):
-                raise Vcf2PrsError('No thresholds available for mixed calculations.')
-
-            self.meanList = PrsInfo.extract_coeffList(tmp, 'mean')
-            self.mean = PrsInfo.extract_coeff(self.meanList,tmpAnc)
-            if self.mean != 999.999:
+            essFlag = 1 if (ancestry==-1) else 0   #mean and sd cannot be recalculated in mixed ancestry calculations
+            self.meanList = PrsInfo.extract_coeffList(tmp, 'mean', essFlag, None, None)
+            if self.meanList[0] != 888.888:
                 tmp = prs_data.__next__()
                 while tmp[0] == "#": tmp = prs_data.__next__()
-            self.sdList = PrsInfo.extract_coeffList(tmp, 'sd')
-            self.sd = PrsInfo.extract_coeff(self.sdList,tmpAnc,0)
-            if self.sd != 999.999:
+            self.sdList = PrsInfo.extract_coeffList(tmp, 'sd', essFlag, 0, None)
+            if self.sdList[0] != 888.888:
                 tmp = prs_data.__next__()
                 while tmp[0] == "#": tmp = prs_data.__next__()
-            self.alphaList = PrsInfo.extract_coeffList(tmp, 'alpha')
-            self.alpha = PrsInfo.extract_coeff(self.alphaList,tmpAnc,0,1)
+            self.alphaList = PrsInfo.extract_coeffList(tmp, 'alpha', 1, 0, 1)
             snp_data = csv.DictReader(prs_data)
-        #if (ancestry<0):
-        #    import numpy as np
-        #    tmpTab = np.genfromtxt(prs_data, delimiter=',',skip_header=1,usecols = (4,6,7,8,9))
-        #    lorList = tmpTab[:,0]
-        #    eafList = tmpTab[:,1:]
         except (IOError, UnicodeDecodeError, StopIteration):
             if 'fsock' in locals():
                 fsock.close()
@@ -347,9 +354,7 @@ class PrsInfo(object):
                 self.snps[(c, p)] = Snp(**{key: row[columns[key]] for key in
                                            column_keys})
                 if (ancestry<0):
-                    tmpList = []
-                    for col in ['eaf_eur', 'eaf_afr','eaf_eas','eaf_sas']:
-                        tmpList.append(float(row[col]))
+                    tmpList = [float(row[i]) for i in ['eaf_eur', 'eaf_afr','eaf_eas','eaf_sas']]
                     eafList.append(tmpList)
         except:
             raise Vcf2PrsError('The chosen PRS files does not contain '
@@ -365,9 +370,13 @@ class PrsInfo(object):
         self.lorList = [s.lor for s in self.snps.values()]
         self.eafList = eafList
         
-        # Calculate the mean and standard deviation for the set of variants.
-        if self.mean == 999.999:
-           self.mean = sum([s.mean for s in self.snps.values()])     #mostly useless; we generally read it from the PRS file
-        if self.sd == 999.999:
-           self.sd = (sum([s.var for s in self.snps.values()]))**0.5  #mostly useless; we generally read it from the PRS file
+        # Extract or calculate alpha, mean and standard deviation for the set of variants.
+        if (ancestry>=0):
+            self.alpha = PrsInfo.extract_coeff(self.alphaList,ancestry,True)
+            self.mean = PrsInfo.extract_coeff(self.meanList,ancestry,False)
+            if (self.mean == 888.888) or (self.mean == 999.999):
+                self.mean = sum([s.mean for s in self.snps.values()])      #mostly useless; we generally read it from the PRS file
+            self.sd = PrsInfo.extract_coeff(self.sdList,ancestry,False)
+            if (self.sd == 888.888) or (self.sd == 999.999):
+                self.sd = (sum([s.var for s in self.snps.values()]))**0.5  #mostly useless; we generally read it from the PRS file
         return

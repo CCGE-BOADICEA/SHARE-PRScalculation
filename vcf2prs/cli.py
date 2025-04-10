@@ -8,7 +8,6 @@
 """
 import vcf2prs
 import argparse
-from argparse import RawTextHelpFormatter
 import sys
 import csv
 
@@ -41,7 +40,7 @@ def main():
     """
     # Set up a parser with the desired options
     parser = argparse.ArgumentParser(description=description,
-                                     formatter_class=RawTextHelpFormatter)
+                                     formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument(
         'prs_file_name',
         metavar='<PRS File name>',
@@ -177,39 +176,43 @@ def main():
     elif raw_PRS is not None:
         prs.raw_PRS = [raw_PRS]
 
-    #(if possible): calculate zScore and assign it to PRS object
     if (ancestry<0):
+        # Case 1, mixed ancestry -rawPRS in the proportions file
         prs.calculate_mixed_prs(props_file, sample)
     elif hasattr(prs, 'raw_PRS'):
-        prs.calculate_z_from_raw(prs.raw_PRS,len(prs.raw_PRS))
+        # Case 1 (other mixed ancestry), Case 1 (single ancestry), Case 2
+        prs.calculate_z_from_raw(prs.raw_PRS)
+        prs.alpha = [prs.alpha] * len(prs.raw_PRS)
+    elif z_Score is not None:
+        # Case 3 - Calculate the raw PRS from the z-score
+        prs.calculate_raw_from_z([z_Score])
+        prs.alpha = [prs.alpha] * len(prs.raw_PRS)
 
 
     #Print results
     if hasattr(prs, 'z_Score'):
-        # Cases 1 and 2
+        # Cases 1, 2, 3
         if len(prs.raw_PRS) == 1:
-            #for the moment, mixed ancestry can only be run with 1 sample (weird behaviour with multiple ones)
             results = resFormat1.format(prs.raw_PRS[0], prs.alpha[0], prs.z_Score[0])
             print(results)
         elif res_file is None:
             print("sample\t raw PRS\t alpha\t\t z-score")
-            for sc in range(len(prs.raw_PRS)):
-                print(f"{prs.genoNames[sc]}\t{prs.raw_PRS[sc]: #.6}\t{prs.alpha[sc]:#.6}\t{prs.z_Score[sc]: #.6}")
+            for (tName, tRaw, tAlpha, tZed) in zip(prs.genoNames, prs.raw_PRS, prs.alpha, prs.z_Score):
+                print(f"{tName}\t{tRaw: #.6}\t{tAlpha:#.6}\t{tZed: #.6}")
         else:
             with open(res_file, "w", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(["sample", "raw_PRS", "alpha", "z-score"])
-                for sc in range(len(prs.raw_PRS)):
-                    writer.writerow([prs.genoNames[sc], prs.raw_PRS[sc], prs.alpha[sc], prs.z_Score[sc]])
- 
-    elif z_Score is not None:
-        # Case 3 - Calculate the raw PRS from the z-score
-        prs.calculate_raw_from_z(z_Score)
-        results = resFormat1.format(prs.raw_PRS, prs.alpha, prs.z_Score)
-        print(results)
-   
+                for (tName, tRaw, tAlpha, tZed) in zip(prs.genoNames, prs.raw_PRS, prs.alpha, prs.z_Score):
+                    writer.writerow([tName, tRaw, tAlpha, tZed])
+
     else:
         # Case 4 - Calculate the mean and sd of the PRS
+        if len(prs.meanList) > 1:
+            print("Parameters for the all ancestries in the file.\n mean\t st. dev\t alpha")
+            for (tMean, tSD, tAlpha) in zip(prs.meanList, prs.sdList, prs.alphaList):
+                print(f"{tMean}\t{tSD: #.6}\t{tAlpha:#.6}")
+            print("\nParameters for the selected ancestry (default=first values in the list)")
         results = resFormat2.format(prs.mean, prs.sd, prs.alpha)
         print(results)
 

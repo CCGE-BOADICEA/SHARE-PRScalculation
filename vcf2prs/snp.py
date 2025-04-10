@@ -45,7 +45,7 @@ class Snp(object):
         Vcf2PrsError: If the arguments are not valid.
 
     """
-    CHROMOSOME_NAMES = ['X', 'Y'] + [str(i + 1) for i in range(23)]
+    CHROMOSOME_NAMES = ['X', 'Y'] + [str(i) for i in range(1,24)]
     BASES = ['A', 'T', 'C', 'G']
 
     __slots__ = ('_chr', '_pos', '_ref', '_eff', '_lor', '_eaf',
@@ -151,8 +151,8 @@ class Snp(object):
         # Check that eaf is within limits 0 <= eaf <= 1
         if not (0.0 <= self.eaf <= 1.0):
             raise Vcf2PrsError(f"Invalid effect allele frequency ({self.eaf})"
-                               " passed to a Snp object. It must be in the "
-                               "range [0, 1]")
+                               " passed to a Snp object. It must be in the"
+                               " interval [0, 1]")
 
     @property
     def mean(self):

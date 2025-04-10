@@ -68,9 +68,11 @@ class Prs(object):
     @property
     def alphaList(self):
         return self._prs_info.alphaList
-    @alphaList.setter
-    def alphaList(self, alphaList):
-        self._prs_info.alphaList = alphaList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @alphaList.setter
+#    def alphaList(self, alphaList):
+#        self._prs_info.alphaList = alphaList
+
     @property
     def alpha(self):
         return self._prs_info.alpha
@@ -81,48 +83,56 @@ class Prs(object):
     @property
     def threshList(self):
         return self._prs_info.threshList
-    @threshList.setter
-    def threshList(self, threshList):
-        self._prs_info.threshList = threshList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @threshList.setter
+#    def threshList(self, threshList):
+#        self._prs_info.threshList = threshList
 
     @property
     def meanList(self):
         return self._prs_info.meanList
-    @meanList.setter
-    def meanList(self, meanList):
-        self._prs_info.meanList = meanList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @meanList.setter
+#    def meanList(self, meanList):
+#        self._prs_info.meanList = meanList
     @property
     def mean(self):
         return self._prs_info.mean
-    @mean.setter
-    def mean(self, mean):
-        self._prs_info.mean = mean
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @mean.setter
+#    def mean(self, mean):
+#        self._prs_info.mean = mean
 
     @property
     def sdList(self):
         return self._prs_info.sdList
-    @sdList.setter
-    def sdList(self, sdList):
-        self._prs_info.sdList = sdList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @sdList.setter
+#    def sdList(self, sdList):
+#        self._prs_info.sdList = sdList
     @property
     def sd(self):
         return self._prs_info.sd
-    @sd.setter
-    def sd(self, sd):
-        self._prs_info.sd = sd
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @sd.setter
+#    def sd(self, sd):
+#        self._prs_info.sd = sd
 
     @property
     def lorList(self):
         return self._prs_info.lorList
-    @lorList.setter
-    def lorList(self, lorList):
-        self._prs_info.lorList = lorList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @lorList.setter
+#    def lorList(self, lorList):
+#        self._prs_info.lorList = lorList
+
     @property
     def eafList(self):
         return self._prs_info.eafList
-    @eafList.setter
-    def eafList(self, eafList):
-        self._prs_info.eafList = eafList
+# setter not required here: it's only used, but it's set in prsinfo.py
+#    @eafList.setter
+#    def eafList(self, eafList):
+#        self._prs_info.eafList = eafList
 
     @property
     def genoNames(self):
@@ -136,6 +146,14 @@ class Prs(object):
         return self._raw_PRS
     @raw_PRS.setter
     def raw_PRS(self, raw_PRS):
+        if not isinstance(raw_PRS, list):
+            raise Vcf2PrsError("Invalid raw_PRS passed to Prs object, "
+                               f"of type {type(raw_PRS)}.")
+        else:
+            for tRaw in raw_PRS:
+                if not isinstance(tRaw, float):
+                    raise Vcf2PrsError("Invalid rawPRS contained in raw_PRS list, "
+                                       f"of type {type(tRaw)}.")
         self._raw_PRS = raw_PRS
 
     @property
@@ -143,6 +161,14 @@ class Prs(object):
         return self._z_Score
     @z_Score.setter
     def z_Score(self, z_Score):
+        if not isinstance(z_Score, list):
+            raise Vcf2PrsError("Invalid z_Score passed to Prs object, "
+                               f"of type {type(z_Score)}.")
+        else:
+            for tZed in z_Score:
+                if not isinstance(tZed, float):
+                    raise Vcf2PrsError("Invalid zScore contained in z_score list, "
+                                       f"of type {type(tZed)}.")
         self._z_Score = z_Score
 
     @staticmethod
@@ -180,6 +206,7 @@ class Prs(object):
                                'been passed a record of the incorrect type, '
                                '{0}. Should be of type "vcf.model._Record".'.
                                format(type(record)))
+
         # Check the chromosome and position.
         Snp.convert_chromosome(record.CHROM)
         Snp.convert_position(record.POS)
@@ -260,6 +287,25 @@ class Prs(object):
             Vcf2PrsError: If the record is not valid.
 
         """
+        # Check that the arguments are of the correct type
+        if not isinstance(gt, str):
+            raise Vcf2PrsError('Error: The method Vcf2Prs.validate_record has '
+                               'been passed a genotype key, {0} of the '
+                               'incorrect type, {1}. Should be of type str.'.
+                               format(gt, type(gt)))
+        if not isinstance(ds, str):
+            raise Vcf2PrsError('Error: The method Vcf2Prs.validate_record has '
+                               'been passed a dosage key, {0} of the '
+                               'incorrect type, {1}. Should be of type str.'.
+                               format(ds, type(ds)))
+
+        # Check that the record is of the correct type
+        if not isinstance(record, vcf.model._Record):
+            raise Vcf2PrsError('Error: The method Vcf2Prs.validate_record has '
+                               'been passed a record of the incorrect type, '
+                               '{0}. Should be of type "vcf.model._Record".'.
+                               format(type(record)))
+
         # Check that the sample is in the genotypes
         try:
             record.genotype(sample)
@@ -321,8 +367,8 @@ class Prs(object):
             # Determine the list of allowed genotypes.
             allowd_genotyes = ['0']
             if record.ALT != [None]:
-                for i in range(len(record.ALT)):
-                    allowd_genotyes.append(str(i + 1))
+                altN = len(record.ALT)
+                allowd_genotyes = [str(i) for i in range(altN+1)]
 
             # Check that each genotype is in the allowed genotypes.
             for g in genotypes:
@@ -489,24 +535,28 @@ class Prs(object):
                                f'{type(ex).__name__}: {ex.args}')
 
         # Determine if the sample is in the file, and raise an exception if it is not.
-        self.genoNames = geno_data.samples
         if len(geno_data.samples) < 1:
             geno_data._reader.close()
             raise Vcf2PrsError('Error: No samples found in the genotype file.')
         if (sample is None):
+            self.genoNames = geno_data.samples
             genoN = len(geno_data.samples)
         else:
-            genoN = 1
             if (sample not in geno_data.samples):
                 geno_data._reader.close()
-                raise Vcf2PrsError(f'Error: the sample "{sample}" is not'
+                raise Vcf2PrsError(f'Error: the sample "{sample}" is not '
                                    'in the genotype file.')
+            if geno_data.samples.count(sample) != 1:
+                geno_data._reader.close()
+                raise Vcf2PrsError('Error: the sample "{sample}" is in '
+                               'the genotype file more than once.')
+            self.genoNames = [sample]
+            genoN = 1
 
 
         # Reset the found property for each snp
         self._prs_info.reset_found()
         # Initialise the raw_PRS to 0, so that it can be incremented.
-        self.alpha = [self.alpha] * genoN
         self.raw_PRS = [0.0] * genoN
         try:
             # Loop through the variants in the file, determine if it is in the
@@ -535,21 +585,14 @@ class Prs(object):
                     # Validate the record
                     Prs.validate_record(record, snp, gt, ds)
 
-                    if (sample is None):
-                        for sc in range(genoN):
-                            try:
-                                # Count the number of copies of the effect allele.
-                                count = Prs.extract_count(record, geno_data.samples[sc], snp, gt, ds)
-                            except:
-                                self.raw_PRS[sc] = float('nan')
-                            else:
-                                # Increment the raw_PRS
-                                self.raw_PRS[sc] += count * snp.lor
-                    else:
-                        # Count the number of copies of the effect allele.
-                        count = Prs.extract_count(record, sample, snp, gt, ds)
-                        # Increment the raw_PRS
-                        self.raw_PRS[0] += count * snp.lor
+                    for sc in range(genoN):
+                        try:
+                            # Count the number of copies of the effect allele.
+                            count = Prs.extract_count(record, self.genoNames[sc], snp, gt, ds)
+                            # Increment the raw_PRS
+                            self.raw_PRS[sc] += count * snp.lor
+                        except:
+                            self.raw_PRS[sc] = float('nan')
 
         except IndexError:
             raise Vcf2PrsError('Error: Invalid record in the geno_file.')
@@ -571,32 +614,28 @@ class Prs(object):
 
         Args:
             z_Score (float): the z score PRS.
-
         """
         self.z_Score = z_Score
-
-        # Convert the Z score to a raw PRS.
-        self.raw_PRS = self.z_Score * self.sd + self.mean
+        ## Convert the Z score to a raw PRS.
+        self.raw_PRS = [(tZed * self.sd + self.mean) for tZed in z_Score]
         return
 
-    def calculate_z_from_raw(self, raw_PRS, genoN):
+    def calculate_z_from_raw(self, raw_PRS):
         """
         Method to calculate the Z-score from the raw polygenic load.
 
         Args:
             raw_PRS (float): the raw PRS.
-
         """
         self.raw_PRS = raw_PRS
-        self.z_Score = [0.0] * genoN
-        # Convert the Z score to a raw PRS.
-        for sc in range(genoN):
-            self.z_Score[sc] = (self.raw_PRS[sc] - self.mean) / self.sd
+        ## Convert the Z score to a raw PRS.
+        self.z_Score = [((tRaw - self.mean) / self.sd) for tRaw in raw_PRS]
         return
 
     def calculate_mixed_prs(self, props_file, sample=None):
         """
-        Method to calculate the raw PRS from the genotypes from a VCF file.
+        Method to calculate the alpha and Z-score from the raw polygenic load,
+               for individuals of mixed ancestry.
 
         Args:
             props_file (str, io.StringIO or io.TextIOWrapper): A string
@@ -619,27 +658,33 @@ class Prs(object):
         try:
             tmpTab = np.genfromtxt(props_file, dtype=float, delimiter=',',skip_header=1)
             if len(tmpTab.shape) == 1:
-                propNames = np.array(['sample'])
+                propsN = 1
+                colsN  = tmpTab.shape[0]
                 tmpTab = np.array([tmpTab])
-            if tmpTab.shape[1]==6:          #robust, but has to be updated in other ancestries are considered
-            #if (np.isnan(tmpTab[0,0])):    #this only works if sample names are not entirely numeric
+            else:
+                propsN = tmpTab.shape[0]
+                colsN  = tmpTab.shape[1]
+            if colsN==6:          #robust, but has to be updated if other ancestries are considered
                 propNames = np.genfromtxt(props_file, dtype=str, delimiter=',',skip_header=1, usecols=0)
                 tmpTab = tmpTab[:,1:]
+            else:
+                propNames = np.array(['row'+str(i) for i in range(1,propsN+1)])
         except (IOError, ValueError, UnicodeDecodeError, StopIteration):
             raise Vcf2PrsError('Unable to read the props file')
 
         propPRS = tmpTab[:,0]
         propDistr = tmpTab[:,1:5]
-        if any(np.sum(propDistr,1) != 1):
-            raise ValueError("Ancestry proportions don't add up to 1!")
+        for idx,row in enumerate(propDistr):
+            if any(row<0):
+                raise Vcf2PrsError('Negative proportions!')
+            if not( 0.99< np.sum(row) <1.01 ):
+                raise Vcf2PrsError('Ancestry proportions do not add up to 1!')
+            propDistr[idx,:] = row/np.sum(row)
 
-
-        if sample is None:
-            propsN = tmpTab.shape[0]
-        else:
+        if sample is not None:
             propsN = 1
             # check that the sample is of the correct type
-            if not (sample, (str)):
+            if not (isinstance(sample, (str))):
                 raise Vcf2PrsError("Invalid sample name passed to Prs object, "
                                     f"of type {type(sample)}.")
             # check it exists in the proportion file
@@ -656,17 +701,16 @@ class Prs(object):
                                'the sample, {0} is not present in the proportions file.'.
                                format(sample))
 
-
         if not hasattr(self, 'raw_PRS'):
             #if rawPRS wasn't otherwise available, retrieve it from the proportion file
-            self.raw_PRS = propPRS
-            self.genoNames = [str(x) for x in range(1,propsN+1)]
+            self.raw_PRS = propPRS.tolist()
+            self.genoNames = propNames
         elif propsN != len(self.raw_PRS):
             # Check concordance between genotype and proportion files (if needed)
-            raise ValueError("Number of genotype samples and number of proportions don't match!")
+            raise Vcf2PrsError('Number of genotype samples and number of proportions do not match!')
         elif (propsN>1) and any(self.genoNames != propNames):
             # Check concordance between genotype and proportion files (if needed)
-            raise ValueError("Names of genotype samples and names of proportions don't match!")
+            raise Vcf2PrsError('Names of genotype samples and names of proportions do not match!')
 
         alphaList = np.asarray(self.alphaList[1:5], dtype=np.float32)
         threshList = np.asarray(self.threshList[1:5], dtype=np.float32)
@@ -675,8 +719,8 @@ class Prs(object):
         lorList = np.asarray(self.lorList, dtype=np.float32)
         eafList = np.asarray(self.eafList, dtype=np.float32)
 
-        self.z_Score = np.zeros(propsN)
-        self.alpha = np.zeros(propsN)
+        self.z_Score = [0.0] * propsN
+        self.alpha = [0.0] * propsN
         for i in range(propsN):
             monoFlag = (propDistr[i,:] >= threshList)
             if np.any(monoFlag):
