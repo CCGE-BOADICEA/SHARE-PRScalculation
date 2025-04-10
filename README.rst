@@ -275,14 +275,14 @@ The package can be uninstalled using the command
 Requirements
 ~~~~~~~~~~~~
 
-This package is built on the PyVCF Python package, which is listed in
+This package uses the PyVCF and numpy Python packages, which are listed in
 ``requirements.txt``.
-It can be installed using the command
+They can be installed using the command
 
 .. code:: console
    $ pip install -r requirements.txt
 
-This package also requires the following packages: argparse, csv, io, math, numpy, sys.
+This package also requires the following packages: argparse, csv, io, math, sys.
 Since they are usually already installed in most system, they are not currently included in the requirements file.
 
 
