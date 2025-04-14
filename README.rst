@@ -242,6 +242,8 @@ characteristics.
 Installation
 -----------
 
+These scripts require Python 3.
+
 The repository is structured as a Python package, and the command line tool
 and module can be instlalled using the ``pip`` Python package installer.
 First download the repository from GitHub, either via SSH
