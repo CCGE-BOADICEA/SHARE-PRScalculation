@@ -2,7 +2,7 @@
 #reference: <in preparation>
 #extra: means recalculated from this file using vcf2prs scripts
 #Pop,Eur,Afr,EAs,SAs               #ethnicities
-1.0,0.9,0.9,0.9,0.8                #threshold
+1.0,0.8,0.8,0.8,0.7                #threshold
 -0.259,-0.250,-0.409,-0.418,-0.437 #mean
 0.315,0.322,0.254,0.235,0.278      #sd
 0.223,0.223,0.178,0.171,0.194      #alpha
